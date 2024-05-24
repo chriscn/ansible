@@ -1,0 +1,3 @@
+# prometheus
+prometheus_storage_retention: 5y
+prometheus_storage_retention_size: 100GB

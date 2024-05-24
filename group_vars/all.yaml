@@ -1,0 +1,7 @@
+# geerlingguy.security
+security_ssh_allowed_users:
+  - christopher
+
+# geerlingguy.ntp
+ntp_area: uk
+ntp_timezone: Europe/London

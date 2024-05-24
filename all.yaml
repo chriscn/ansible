@@ -1,0 +1,10 @@
+- name: All (tasks to apply to all hosts)
+  hosts: all
+  become: true
+  roles:
+    - geerlingguy.security
+    - geerlingguy.ntp
+    - geerlingguy.node_exporter
+  vars:
+    node_exporter_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ('arm64' if ansible_architecture == 'aarch64' else ansible_architecture) }}"
+    
