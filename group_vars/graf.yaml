@@ -1,3 +1,8 @@
 # prometheus
 prometheus_storage_retention: 5y
 prometheus_storage_retention_size: 100GB
+
+# blackbox
+blackbox_http_targets:
+  - https://york.ac.uk
+  - https://yusu.org
