@@ -7,4 +7,11 @@
     - geerlingguy.node_exporter
   vars:
     node_exporter_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else ('arm64' if ansible_architecture == 'aarch64' else ansible_architecture) }}"
-    
+- name: Install prerequisites for Ansible to install .deb via apt module
+  hosts: all
+  become: true
+  tasks:
+    - name: Install xz-utils package
+      ansible.builtin.apt:
+        name:
+          - xz-utils
