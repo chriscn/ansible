@@ -1,11 +1,154 @@
 # secrets
 homeassistant_bearer_token: ENC[PKCS7,MIICKwYJKoZIhvcNAQcDoIICHDCCAhgCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJKoZIhvcNAQEBBQAEggEAdNL0vXHHthuaZUt6d88oB64GuCur9r3MnaaGjmUC5fZfqEQ+YF7Q/OI55LKfo0m6ASFo83jqOXSjfi9fvTpHdeRtW6jCkrfRBGbNrmTcyZhevVf0VF3WshULZa1kAssHGL1BaeSes2BMEFOodSVUfwbMZT0+8nCk1j2fdnhQLsazp09tb5Sbh6EKBdyj8/yTqwXnH6Ol9Oj9QBB0LxQaqwhCU89JbyWNuXC1S0jbdu0uJburIFxoWH9TUOvSuWnzxuTjP1t/uf3Wjx6VzBLJfSpWvkkr39vM5Wm3GjmbnT5YORe70zgzJV6KoRUdcVVWVxRM6iGgiHWppqw0/xxTSDCB7QYJKoZIhvcNAQcBMB0GCWCGSAFlAwQBKgQQ7ZXSXDfgA2hEiQ7CUXEuoYCBwGcJvlJQFWrIIXtOMlbvD6zrorh+jGJol9OYZc19/dVpIpmCobpqpvSTW72uJPEhJLzNQpwbKG7vmydCgD62MJcOBbR2SUCMvxFVXqtzT4S+Xetz26g27uFJFuQUginomRYM6CdxOtzCI1UnVMHIQ0W8jczW0fBIUAXBj56OhpS95O5fbtp4cL3XP2sfKFMx+zWG851/B47RzEI7h8it/5yF2ok2OQQuTho5q+HDXvubuj3CH8pyICZ5t7R3lz/OUw==]
 grafana_admin_password: ENC[PKCS7,MIIBuQYJKoZIhvcNAQcDoIIBqjCCAaYCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJKoZIhvcNAQEBBQAEggEAWv8stjR2Fnoa+/rRl0gghLay6sRjLL7yNSpTb0shVUrXfM2TnfDjnqsZaWChQpQbP4NjfnyWiIlF2akNcnO8Rs75YPVjXYa6zHO3AfE9kulZ4PhMafgPIsaQtN5emLqntsKP8cauflCwLen7R/QCXkUE3v2pI10hujucSSXwUbW8+97um8fWrZP7TNdbn7VDu6FdJOcvOpC6xT101KZaJateuSKrbsUlXUwKaUiWVnJ1rZReTnU0lDRmGpXTok+y6pDcX7LkYHPTK0m4HKNsJpQFFKyPHoo2g1I9qGkA/8HhKP6L5W1EgFz42e/EvR+EbeH8xhj9ny4EFoqgnfNWXzB8BgkqhkiG9w0BBwEwHQYJYIZIAWUDBAEqBBAgOI2w0yPL/oP3gToqXIrwgFCb5iAepFwaDo9ObgkLEX9QsqZi6OibtBVgUIxEO98+HHpEM7ma/HOZ/4TpeiFuLj/kMccNnj+5HROjXayVdzvAsl+qF190YL8WYeLfrdrPmg==]
+
 # prometheus
 prometheus_storage_retention: 5y
 prometheus_storage_retention_size: 100GB
 
+
+prometheus_scrape_configs:
+- job_name: prometheus
+  metrics_path: "{{ prometheus_metrics_path }}"
+  static_configs:
+  - targets: "{{ groups['graf'] | map('regex_replace', '(.+)', '\\1:9090') | list }}"
+- job_name: node_exporter
+  metrics_path: /metrics
+  static_configs:
+  - targets: "{{ groups['all'] | map('regex_replace', '(.+)', '\\1:9100') | list }}"
+- job_name: blackbox
+  metrics_path: /metrics
+  static_configs:
+  - targets: "{{ groups['graf'] | map('regex_replace', '(.+)', '\\1:9115') | list }}"
+- job_name: blackbox_http
+  metrics_path: /probe
+  params:
+    module: [http_2xx]
+  static_configs:
+  - targets: "{{ blackbox_http_targets }}"
+  relabel_configs:
+  - source_labels: [__address__]
+    target_label: __param_target
+  - source_labels: [__param_target]
+    target_label: instance
+  - target_label: __address__
+    replacement: 127.0.0.1:9115 # The blackbox exporter's real hostname:port.
+- job_name: blackbox_icmp
+  metrics_path: /probe
+  params:
+    module: [icmp]
+  static_configs:
+  - targets: "{{ blackbox_icmp_targets }}"
+  relabel_configs:
+  - source_labels: [__address__]
+    target_label: __param_target
+  - source_labels: [__param_target]
+    target_label: instance
+  - target_label: __address__
+    replacement: 127.0.0.1:9115 # The blackbox exporter's real hostname:port.
+- job_name: blackbox_ssh
+  metrics_path: /probe
+  params:
+    module: [ssh_banner]
+  static_configs:
+  - targets: "{{ groups['all'] | map('regex_replace', '(.+)', '\\1:22') | list }}"
+  relabel_configs:
+  - source_labels: [__address__]
+    target_label: __param_target
+  - source_labels: [__param_target]
+    target_label: instance
+  - target_label: __address__
+    replacement: 127.0.0.1:9115 # The blackbox exporter's real hostname:port.
+- job_name: pikvm
+  metrics_path: "/api/export/prometheus/metrics"
+  basic_auth:
+    username: admin
+    password: admin
+  scheme: https
+  static_configs:
+  - targets: ["10.0.10.8"]
+  tls_config:
+    insecure_skip_verify: true # For self-signed certificate
+- job_name: "hass"
+  scrape_interval: 60s
+  metrics_path: /api/prometheus
+
+  # Long-Lived Access Token
+  bearer_token: "{{ homeassistant_bearer_token | eyaml }}"
+
+  scheme: https
+  static_configs:
+  - targets: ['homeassistant.chrisnethercott.co.uk']
+
 # blackbox
+blackbox_exporter_configuration_modules:
+  http_2xx:
+    prober: http
+    http:
+      preferred_ip_protocol: "ip4"
+  http_post_2xx:
+    prober: http
+    http:
+      method: POST
+  tcp_connect:
+    prober: tcp
+  pop3s_banner:
+    prober: tcp
+    tcp:
+      query_response:
+      - expect: "^+OK"
+      tls: true
+      tls_config:
+        insecure_skip_verify: false
+  grpc:
+    prober: grpc
+    grpc:
+      tls: true
+      preferred_ip_protocol: "ip4"
+  grpc_plain:
+    prober: grpc
+    grpc:
+      tls: false
+      service: "service1"
+  ssh_banner:
+    prober: tcp
+    tcp:
+      query_response:
+      - expect: "^SSH-2.0-"
+      - send: "SSH-2.0-blackbox-ssh-check"
+  irc_banner:
+    prober: tcp
+    tcp:
+      query_response:
+      - send: "NICK prober"
+      - send: "USER prober prober prober :prober"
+      - expect: "PING :([^ ]+)"
+        send: "PONG ${1}"
+      - expect: "^:[^ ]+ 001"
+  icmp:
+    prober: icmp
+  icmp_ttl5:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      ttl: 5
+
+# blackbox targets
 blackbox_http_targets:
-  - https://york.ac.uk
-  - https://yusu.org
+- https://york.ac.uk
+- https://yusu.org
+- https://chrisnethercott.co.uk
+blackbox_icmp_targets:
+- 1.1.1.1
+- 1.0.0.1
+- 8.8.8.8
+- 8.8.4.4
+
+# grafana
+grafana_security:
+  admin_user: admin
+  admin_password: "{{ grafana_admin_password | eyaml }}"
+grafana_alerting: {}
+
+# loki
+loki_version: "latest"
