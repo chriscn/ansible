@@ -1,29 +1,34 @@
-- name: Install graphing related utilities
+- name: Setup prometheus + exporters + alerts
   become: true
   hosts: graf
   roles:
     - prometheus.prometheus.prometheus
     - prometheus.prometheus.blackbox_exporter
-  vars:
-    prometheus_scrape_configs:
-      - job_name: prometheus
-        metrics_path: "{{ prometheus_metrics_path }}"
-        static_configs:
-          - targets: "{{ groups['graf'] | map('regex_replace', '(.+)', '\\1:9090') | list }}"
-      - job_name: node_exporter
-        metrics_path: /metrics
-        static_configs:
-          - targets: "{{ groups['all'] | map('regex_replace', '(.+)', '\\1:9100') | list }}"
-      - job_name: blackbox_http
-        metrics_path: /probe
-        params:
-          module: [http_2xx]
-        static_configs:
-          - targets: "{{ blackbox_http_targets }}"
-        relabel_configs:
-        - source_labels: [__address__]
-          target_label: __param_target
-        - source_labels: [__param_target]
-          target_label: instance
-        - target_label: __address__
-          replacement: 127.0.0.1:9115  # The blackbox exporter's real hostname:port.
+  tasks:
+    - name: Download awesome-prometheus-alerts
+      ansible.builtin.get_url:
+        url: "{{ item }}"
+        dest: /etc/prometheus/rules/{{ (item | split('/'))[-2:] | join('_') | regex_replace('yml', 'rules') }}
+        mode: 0640
+        owner: prometheus
+        group: prometheus
+      loop:
+        - https://raw.githubusercontent.com/samber/awesome-prometheus-alerts/master/dist/rules/prometheus-self-monitoring/embedded-exporter.yml
+        - https://raw.githubusercontent.com/samber/awesome-prometheus-alerts/master/dist/rules/host-and-hardware/node-exporter.yml
+        - https://raw.githubusercontent.com/samber/awesome-prometheus-alerts/master/dist/rules/blackbox/blackbox-exporter.yml
+        - https://raw.githubusercontent.com/samber/awesome-prometheus-alerts/master/dist/rules/zfs/node-exporter.yml
+      notify: Reload prometheus
+- name: Setup grafana
+  become: true
+  hosts: graf
+  roles:
+    - grafana.grafana.grafana
+  tags:
+    - grafana
+- name: Setup loki (taylors version)
+  become: true
+  hosts: graf
+  roles:
+    - loki
+  tags:
+    - loki
