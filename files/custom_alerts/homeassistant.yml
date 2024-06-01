@@ -1,0 +1,19 @@
+groups:
+- name: HomeAssistant
+  rules:
+  - alert: EntityUnavailable
+    expr: 'homeassistant_entity_available{domain=~"switch|light|binary_sensor",entity!~".*phone.*"} == 0'
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "{{ $labels.friendly_name }} is unavailable"
+      description: "{{ $labels.friendly_name }} ({{ $labels.entity}}) is unavailable.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+  - alert: TemperatureWarning
+    expr: 'homeassistant_sensor_temperature_celsius > 40'
+    for: 5m
+    labels:
+      severity: info
+    annotations:
+      summary: "{{ $labels.friendly_name }} is reporting a temperature above 40C"
+      description: "{{ $labels.entity }} is reporting above 40C. Either you need to get an icecream, or something might be on fire."
