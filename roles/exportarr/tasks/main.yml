@@ -1,0 +1,65 @@
+# tasks file for exportarr
+# Create a user and group for the exporter
+# Download the binary and set permissions
+# Create a systemd service file for each service in the exporter
+# Start and enable the service
+
+- name: Obtain the latest version from the Exportarr GitHub repo
+  when: exportarr_version == "latest"
+  block:
+  - name: Scrape Github API endpoint to obtain latest Exportarr version
+    ansible.builtin.uri:
+      url: "https://api.github.com/repos/onedr0p/exportarr/releases/latest"
+      method: GET
+      body_format: json
+    become: false
+    delegate_to: localhost
+    run_once: true
+    register: __github_latest_version
+  - name: Latest available Exportarr version
+    ansible.builtin.set_fact:
+      exportarr_version: "{{ __github_latest_version.json.tag_name | regex_replace('^v?(\\d+\\.\\d+\\.\\d+)$', '\\1') }}"
+- name: Ensure Exportarr binary is installed
+  ansible.builtin.stat:
+    path: "/usr/local/bin/exportarr"
+  register: __exportarr_binary
+- name: Download Exportarr Binary
+  # disable when "/usr/local/bin/exportarr exists
+  when: not __exportarr_binary.stat.exists
+  block:
+  - name: Download Exportarr Archive
+    ansible.builtin.get_url:
+      url: "https://github.com/onedr0p/exportarr/releases/download/v{{ exportarr_version }}/exportarr_{{ exportarr_version }}_linux_{{ __exportarr_arch }}.tar.gz"
+      dest: "/tmp/exportarr_{{ exportarr_version }}_linux_{{ __exportarr_arch }}.tar.gz"
+  - name: Move Exportarr Binary
+    ansible.builtin.copy:
+      src: "/tmp/exportarr_{{ exportarr_version }}_linux_{{ __exportarr_arch }}/exportarr_{{ exportarr_version }}_linux_{{ __exportarr_arch }}/exportarr"
+      dest: "/usr/local/bin/exportarr"
+      mode: '0755'
+- name: Create exportarr group
+  ansible.builtin.group:
+    name: "{{ exportarr_group }}"
+    system: true
+- name: Create exportarr user
+  ansible.builtin.user:
+    name: "{{ exportarr_username }}"
+    group: "{{ exportarr_group }}"
+    shell: /usr/sbin/nologin
+    system: true
+    createhome: false
+- name: Create exportarr service
+  block:
+    - name: Copy exportarr service template
+      ansible.builtin.template:
+        src: exportarr.service.j2
+        dest: "/etc/systemd/system/{{ item.app }}-exportarr.service"
+        owner: root
+        group: root
+        mode: '0644'
+      loop: "{{ exportarr_exporters }}"
+    - name: Start and enable exportarr service
+      ansible.builtin.systemd:
+        name: "{{ item.app }}-exportarr"
+        state: started
+        enabled: true
+      loop: "{{ exportarr_exporters }}"

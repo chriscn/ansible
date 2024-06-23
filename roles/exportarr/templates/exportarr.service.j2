@@ -1,0 +1,14 @@
+[Unit]
+Description=Exportarr {{ item.app }}
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User={{ exportarr_username }}
+ExecStart=exportarr {{ item.app }} --port {{ item.port }} --url {{ item.url }} --api-key {{ item.api_key | eyaml }}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+# defaults file for exportarr
+exportarr_username: exportarr
+exportarr_group: exportarr
+
+exportarr_version: latest
+
+
+# list of services to monitor
+# exportarr_services:
+#   - app: sonarr
+#     port: 9089 # note this is the port that the exporter will listen on
+#     url: http://localhost:8989
+#     api_key: abcdefghijklmnopqrstuvwxyz
+exportarr_exporters: []
