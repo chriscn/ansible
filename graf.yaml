@@ -3,13 +3,14 @@
   hosts: graf
   roles:
     - prometheus.prometheus.prometheus
+    - prometheus.prometheus.alertmanager
     - prometheus.prometheus.blackbox_exporter
   tasks:
     - name: Download awesome-prometheus-alerts
       ansible.builtin.get_url:
         url: "{{ item }}"
         dest: /etc/prometheus/rules/{{ (item | split('/'))[-2:] | join('_') | regex_replace('yml', 'rules') }}
-        mode: 0640
+        mode: '0640'
         owner: prometheus
         group: prometheus
       loop:
@@ -18,6 +19,20 @@
         - https://raw.githubusercontent.com/samber/awesome-prometheus-alerts/master/dist/rules/blackbox/blackbox-exporter.yml
         - https://raw.githubusercontent.com/samber/awesome-prometheus-alerts/master/dist/rules/zfs/node-exporter.yml
       notify: Reload prometheus
+      tags:
+        - prometheus_update_rules
+    - name: Copy custom alerts
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: /etc/prometheus/rules/custom_rule_{{ (item | split('/'))[-1] | regex_replace('yml', 'rules') }}
+        owner: prometheus
+        group: prometheus
+        mode: '0640'
+      with_fileglob:
+        - "files/custom_alerts/*.yml"
+      notify: Reload prometheus
+      tags:
+        - prometheus_update_rules
 - name: Setup grafana
   become: true
   hosts: graf
@@ -32,3 +47,10 @@
     - loki
   tags:
     - loki
+- name: Setup exportarr
+  become: true
+  hosts: graf
+  roles:
+    - exportarr
+  tags:
+    - exportarr

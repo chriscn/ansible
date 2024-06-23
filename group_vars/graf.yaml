@@ -5,8 +5,13 @@ grafana_admin_password: ENC[PKCS7,MIIBuQYJKoZIhvcNAQcDoIIBqjCCAaYCAQAxggEhMIIBHQ
 # prometheus
 prometheus_storage_retention: 5y
 prometheus_storage_retention_size: 100GB
-
-
+prometheus_config_flags_extra:
+  web.enable-admin-api:
+prometheus_alertmanager_config:
+- scheme: http
+  static_configs:
+  - targets:
+    - '127.0.0.1:9093'
 prometheus_scrape_configs:
 - job_name: prometheus
   metrics_path: "{{ prometheus_metrics_path }}"
@@ -79,7 +84,14 @@ prometheus_scrape_configs:
   scheme: https
   static_configs:
   - targets: ['homeassistant.chrisnethercott.co.uk']
-
+- job_name: "exportarr"
+  scrape_interval: 60s
+  metrics_path: /metrics
+  static_configs:
+  - targets:
+    - 127.0.0.1:9089
+    - 127.0.0.1:9078
+    - 127.0.0.1:9088
 # blackbox
 blackbox_exporter_configuration_modules:
   http_2xx:
@@ -152,3 +164,36 @@ grafana_alerting: {}
 
 # loki
 loki_version: "latest"
+
+# alertmanager
+alertmanager_receivers:
+- name: discord
+  discord_configs:
+  - webhook_url: https://discordapp.com/api/webhooks/1246500956728856596/Ve5viHsnyZvyhLjreZ009Ca9WZ3wU-fYpPAZIQkS9UPH3NRPkY__rRFv9OeJbFX5JvlC
+
+alertmanager_route:
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: discord
+  # This routes performs a regular expression match on alert labels to
+  # catch alerts that are related to a list of services.
+  routes:
+  - match_re:
+      service: .*
+    receiver: discord
+
+# exportarr
+exportarr_exporters:
+- app: sonarr
+  port: 9089
+  url: https://sonarr.chrisnethercott.co.uk
+  api_key: ENC[PKCS7,MIIBmQYJKoZIhvcNAQcDoIIBijCCAYYCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJKoZIhvcNAQEBBQAEggEAsK1Hk5eZMfRp0BFLAB8j7GMEwZL/phhSdR635omlgw2iagTKyv/A9dUXV7Sz0nsBwEurOX2NqKw9UH4MDIfQiCVepxeMPHjcjhHTQZiNT1uFijQEJ94kZMuyMTGca/o5gVCwTS8vmg38Prh6DngG9OhtgfU5GobP9tjNhnX2+p3Cpc9Lk6B0mE8x4lI7dudmB6m7/nMh2byr+nRhfd3o5E/1PifLTEtBPjWfWQ77YvppXhLwvbtFF4cm27mhJT9dKEf1ASnGobhRMdNJU+I37AD+PNKy7ddGk2+AEbRTlTORdyvmeslprnwlQPTZxfZzloC/521hR+MtnAcP9Nx2wzBcBgkqhkiG9w0BBwEwHQYJYIZIAWUDBAEqBBBvivPE/EDbS7GIJhjgNZ8bgDBDIWa+yzryTu97tpJ43xAoH5IAdulGypEBtQNsHj+s3hpHFqwJuSflFY8PyN3DdC0=]
+- app: radarr
+  port: 9078
+  url: https://radarr.chrisnethercott.co.uk
+  api_key: ENC[PKCS7,MIIBmQYJKoZIhvcNAQcDoIIBijCCAYYCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJKoZIhvcNAQEBBQAEggEAxDdWosprwrd77GpL7QIx9ewzZc6G0sCsBmCY3QdQewCXJ5/ucwjaF2G0Gy1seE6DxYkI6pfrz2ZNCOu7kOX8JGYPFCqfl+7/dCGM71YfGQC0uiwB1gD3zlDhQ2m7UFf436B2p/9OA5qkb0/zLkjp8WzfnUrOJCe3DNaHWXzhSrfTYqejikimD9S7N2FG29ryniVsG3k0wdknoGaB2XnOZrPj5Rg8WXZj5lue+ttgDBaJQRVsqZnPNPvYGdcUYh3bE8tOurK/w5Zw12qi5i7qo+2285glZhWmZpUpY6iSLjKp1xmhvOwTttCTwm2mqsIrzh+n3sRc/7T0h1rBl6FYrjBcBgkqhkiG9w0BBwEwHQYJYIZIAWUDBAEqBBCHFnDknF6qbCfFSGRBRJK5gDDQJUWyjW96qzXId45onOe85A0MctVWV3su/pniKybimRrTqwrcUYw7M6kxgeW8Oug=]
+- app: lidarr
+  port: 9088
+  url: https://lidarr.chrisnethercott.co.uk
+  api_key: ENC[PKCS7,MIIBmQYJKoZIhvcNAQcDoIIBijCCAYYCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJKoZIhvcNAQEBBQAEggEAmpbiKokr0u1CGXlL5qI2GRSRzoDggiarJPXHJi2ar9iTVRYshiDSMLOqhav5ub04624V/8hsF375BDwdI9vOJAtVdcIW1L0ofPQkqVKY4S0lg5KSvENyFpn8NruW1OGK5j+mpAcU/bHxsQ39l0d51HbwYbRIR/BVRne+u7ztofwLRLTbcf40y5W7t7pOWQUojKvD+JqTm7y1T7q90NhAUrtlCbM7QqxwH1/Om9yKew39RZ5Enc8hBYV2+4JYPL+kqfZAY91yC2ye7cC+4lkstJoawT/vhWV+FEby3vYB0VQHKj0W6M+osCCT3ZTrYBW76+V8mTjZRfsL1smPBIVHHjBcBgkqhkiG9w0BBwEwHQYJYIZIAWUDBAEqBBDxIpydUTw0lMGgSErr9Ya7gDCU5nPPMD5do7z8skpTUT5LE8g/ojoJo5aiDJ7cglW29woyOidgjc8avmJ5wvtxYYQ=]
