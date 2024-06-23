@@ -167,21 +167,14 @@ loki_version: "latest"
 
 # alertmanager
 alertmanager_receivers:
-- name: discord
-  discord_configs:
-  - webhook_url: https://discordapp.com/api/webhooks/1246500956728856596/Ve5viHsnyZvyhLjreZ009Ca9WZ3wU-fYpPAZIQkS9UPH3NRPkY__rRFv9OeJbFX5JvlC
+- name: pushover
+  pushover_config:
+    user_key: "{{ ENC[PKCS7,MIIBiQYJKoZIhvcNAQcDoIIBejCCAXYCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJKoZIhvcNAQEBBQAEggEAqgbjlAlH//hb1fWhBdsP/m51R/XXZFWlGObhvLPu955q2oAgg70CzSP3QGoO5wuRDAURILRbMOrZH2w/nc5hrf0LRIFM6pAnGIkLLtVttBOt8GhyQ4I98+nLXTyFfkkJNWGz09VmbsRkqdbX4XlrHwOnAvC3rJWjFzezQF+enfQkrdlndusfEEYin+aihQyhFwwccVoQMf+hdyjF646oRtp8h7QlWNVhhSZ0oOQ8QtrPluqHZFrS1su35Vc6EnJjMrAK/pqfYpBnTO2Jw025Z1JbGDRf1z6PhhBTHZmLP4V+gOb/BqwXYHVUi84K6MXDaLuOx/jyP76NTMLmI+0UqjBMBgkqhkiG9w0BBwEwHQYJYIZIAWUDBAEqBBABAFjvElNnOjzkN4ZN7HvzgCANm+UwMJJb9wEY9njc+f+xHO+9S7OWCU6LN9TxCcudcQ==] | eyaml }}"
+    token: "{{ ENC[PKCS7,MIIBiQYJKoZIhvcNAQcDoIIBejCCAXYCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJKoZIhvcNAQEBBQAEggEAb5vo5MNlQhoIOmyQv39TuCLJv7IpMiq9UHEp8k6BoCN80msmKP/TFJd9yDVvALxhZReSRcfUEJZay7OOiIZuA4JIkKXfZbMNXfVa9ZzhzUu1H9LvEBwCKR5aq2VfxwQUQZKWRIR+Z7fTXk4LnyyNdkV534JeZGxBljkUgQyQjmpMZzHyN/D+N+bG4bL6iXIUip45yNogx3cU7b+ZxpwH6+7LMnTX3lehRMuxlHXmRpbKguFIqc9UEVxD47hV6s4ie7AcLCc/JIt24LEhDgpgzv3NbUrSdT9crZ17B8Q8w+FdhGxBMpYTMtFlvccYRwuAYgbpOsSsbBrLul1DLfDjEzBMBgkqhkiG9w0BBwEwHQYJYIZIAWUDBAEqBBAOYFJEaYEF9gtWrFcr6vgtgCB9DCHbjHDY/fwU3uMa3a7RbqpWe/1Rrd0pQVDdyRQiHQ==] | eyaml }}"
 
 alertmanager_route:
-  group_wait: 30s
   group_interval: 5m
-  repeat_interval: 4h
-  receiver: discord
-  # This routes performs a regular expression match on alert labels to
-  # catch alerts that are related to a list of services.
-  routes:
-  - match_re:
-      service: .*
-    receiver: discord
+  receiver: pushover
 
 # exportarr
 exportarr_exporters:
